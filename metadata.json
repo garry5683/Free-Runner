@@ -1,0 +1,6 @@
+{
+  "name": "3D Endless Runner",
+  "description": "A high-performance WebGL 3D endless runner core system with responsive lane movement, dynamic obstacle spawning, coin collection, and smooth camera controls.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
