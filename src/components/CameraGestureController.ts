@@ -15,6 +15,7 @@ export interface CameraGestureCallback {
   onJump: () => void;
   onCrouch: () => void;
   onHeightStateChange?: (state: 'NORMAL' | 'JUMP' | 'CROUCH') => void;
+  onRestart: () => void;
   onStatusChange: (status: string) => void;
   onCalibrationProgress?: (progress: number, secondsLeft: number) => void;
   onCalibrationComplete?: (neutralX: number, neutralY: number) => void;
@@ -190,6 +191,8 @@ export class CameraGestureController {
       const nose = pose[0];
       const leftShoulder = pose[11];
       const rightShoulder = pose[12];
+      const leftWrist = pose[15];
+      const rightWrist = pose[16];
 
       if (nose && leftShoulder && rightShoulder) {
         // Average X of shoulders for side-to-side leaning baseline
@@ -215,7 +218,7 @@ export class CameraGestureController {
         }
 
         // Process gesture triggers if not calibrating
-        this.evaluateGestures(now, shoulderX, noseY);
+        this.evaluateGestures(now, shoulderX, noseY, leftWrist, rightWrist);
       } else {
         // Broadcast lack of landmarks
         if (this.callback.onPoseUpdate) {
@@ -289,12 +292,20 @@ export class CameraGestureController {
    * Evaluate positions relative to calibrated center points to map controls.
    * Leverages mirror mapping: X > threshold triggers moveLeft, X < threshold triggers moveRight.
    */
-  private evaluateGestures(now: number, shoulderX: number, noseY: number): void {
+  private evaluateGestures(now: number, shoulderX: number, noseY: number, leftWrist: any, rightWrist: any): void {
+    // Check for Restart Gesture (Hand raised above nose)
+    if ((leftWrist && leftWrist.y < noseY - 0.2) || (rightWrist && rightWrist.y < noseY - 0.2)) {
+      if (now - this.lastVerticalActionTime > 1000) { // Cooldown for restart
+        this.callback.onRestart();
+        this.lastVerticalActionTime = now;
+      }
+    }
+
     // A. Side Leaning Logic with Dynamic Noise Hysteresis
     // The "Mirror" effect: Moving right in camera frame = higher X coordinate value (user leaning physical Left).
     const deltaX = shoulderX - this.neutralShoulderX;
-    const currentLeanThreshold = 0.08 * this.scaleRatio;
-    const returnLeanThreshold = 0.05 * this.scaleRatio; // Buffer zone to prevent jitter
+    const currentLeanThreshold = 0.06 * this.scaleRatio;
+    const returnLeanThreshold = 0.04 * this.scaleRatio; // Buffer zone to prevent jitter
     
     let targetLean: 'CENTER' | 'LEFT' | 'RIGHT' = this.currentLeanState;
     if (this.currentLeanState === 'CENTER') {
@@ -330,9 +341,9 @@ export class CameraGestureController {
     // B. Height Movement Logic with Action Hysteresis
     // Nose Y coordinate goes DOWN when jumping (closer to 0.0), UP when crouching (closer to 1.0).
     const deltaY = noseY - this.neutralNoseY;
-    const currentJumpThreshold = 0.07 * this.scaleRatio;   // Lowered slightly to make jump trigger easier
-    const currentCrouchThreshold = 0.07 * this.scaleRatio; // Lowered slightly to make slide trigger easier
-    const returnHeightThreshold = 0.035 * this.scaleRatio;
+    const currentJumpThreshold = 0.06 * this.scaleRatio;
+    const currentCrouchThreshold = 0.06 * this.scaleRatio;
+    const returnHeightThreshold = 0.03 * this.scaleRatio;
 
     let targetHeight: 'NORMAL' | 'JUMP' | 'CROUCH' = this.currentHeightState;
     if (this.currentHeightState === 'NORMAL') {

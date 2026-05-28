@@ -111,7 +111,7 @@ export default function App() {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const clock = new THREE.Clock();
+    const clock = new THREE.Clock(false);
     clockRef.current = clock;
 
     // 4. Lighting Rig
@@ -462,6 +462,7 @@ export default function App() {
           }}
           onJump={executeJumpStr}
           onCrouch={executeSlideStr}
+          onRestart={handleRestart}
           isGamePlaying={status === 'PLAYING'}
         />
       </div>

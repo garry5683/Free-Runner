@@ -14,6 +14,7 @@ interface CameraControlsProps {
   onJump: () => void;
   onCrouch: () => void;
   onHeightStateChange?: (state: 'NORMAL' | 'JUMP' | 'CROUCH') => void;
+  onRestart: () => void;
   isGamePlaying: boolean;
 }
 
@@ -26,6 +27,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   onJump,
   onCrouch,
   onHeightStateChange,
+  onRestart,
   isGamePlaying,
 }) => {
   const [isEnabled, setIsEnabled] = useState(false);
@@ -56,10 +58,10 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   const controllerRef = useRef<CameraGestureController | null>(null);
 
   // Keep actions ref to prevent closure capture issues in callbacks
-  const actionsRef = useRef({ onMoveLeft, onMoveRight, onLaneChange, onJump, onCrouch, onHeightStateChange });
+  const actionsRef = useRef({ onMoveLeft, onMoveRight, onLaneChange, onJump, onCrouch, onHeightStateChange, onRestart });
   useEffect(() => {
-    actionsRef.current = { onMoveLeft, onMoveRight, onLaneChange, onJump, onCrouch, onHeightStateChange };
-  }, [onMoveLeft, onMoveRight, onLaneChange, onJump, onCrouch, onHeightStateChange]);
+    actionsRef.current = { onMoveLeft, onMoveRight, onLaneChange, onJump, onCrouch, onHeightStateChange, onRestart };
+  }, [onMoveLeft, onMoveRight, onLaneChange, onJump, onCrouch, onHeightStateChange, onRestart]);
 
   // Clean actions indicator timer resets
   const triggerVisualAction = (action: 'left' | 'right' | 'jump' | 'crouch') => {
@@ -136,6 +138,9 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
         onCrouch: () => {
           actionsRef.current.onCrouch();
           triggerVisualAction('crouch');
+        },
+        onRestart: () => {
+          actionsRef.current.onRestart();
         },
         onStatusChange: (status) => {
           setStatusText(status);
