@@ -3,28 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { GameStatus, PlayerStats } from './types';
-import { InputManager } from './components/InputManager';
-import { PlayerController } from './components/PlayerController';
-import { CameraFollow } from './components/CameraFollow';
-import { AABBCollision } from './components/AABBCollision';
-import { WorldGenerator } from './components/WorldGenerator';
-import { ParticleSystem } from './components/ParticleSystem';
-import { GameUI } from './components/GameUI';
-import { CameraControls } from './components/CameraControls';
+import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
+import { GameStatus, PlayerStats } from "./types";
+import { InputManager } from "./components/InputManager";
+import { PlayerController } from "./components/PlayerController";
+import { CameraFollow } from "./components/CameraFollow";
+import { AABBCollision } from "./components/AABBCollision";
+import { WorldGenerator } from "./components/WorldGenerator";
+import { ParticleSystem } from "./components/ParticleSystem";
+import { GameUI } from "./components/GameUI";
+import { CameraControls } from "./components/CameraControls";
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Game UI States
-  const [status, setStatusState] = useState<GameStatus>('READY');
+  const [status, setStatusState] = useState<GameStatus>("READY");
   const [currentSpeed, setCurrentSpeed] = useState(15.0);
   const [countdownVal, setCountdownVal] = useState<number | null>(null);
 
   // Use a mutable ref to hold exact status inside high-frequency 60FPS tick closures
-  const statusRefVal = useRef<GameStatus>('READY');
+  const statusRefVal = useRef<GameStatus>("READY");
   const setStatus = (newStatus: GameStatus) => {
     statusRefVal.current = newStatus;
     setStatusState(newStatus);
@@ -35,7 +35,10 @@ export default function App() {
     score: 0,
     coins: 0,
     distance: 0,
-    highScore: parseInt(localStorage.getItem('cyber_runner_highscore') || '0', 10),
+    highScore: parseInt(
+      localStorage.getItem("cyber_runner_highscore") || "0",
+      10,
+    ),
   });
 
   // Keep actual stats in a mutable ref for low-overhead access inside 60FPS loop
@@ -43,7 +46,10 @@ export default function App() {
     score: 0,
     coins: 0,
     distance: 0,
-    highScore: parseInt(localStorage.getItem('cyber_runner_highscore') || '0', 10),
+    highScore: parseInt(
+      localStorage.getItem("cyber_runner_highscore") || "0",
+      10,
+    ),
   });
 
   // References to active engine modules
@@ -67,7 +73,7 @@ export default function App() {
 
   // 5-to-0 Countdown Effect
   useEffect(() => {
-    if (status !== 'COUNTDOWN' || countdownVal === null) return;
+    if (status !== "COUNTDOWN" || countdownVal === null) return;
 
     if (countdownVal > 0) {
       const timer = setTimeout(() => {
@@ -78,7 +84,7 @@ export default function App() {
       // Countdown complete! Resume core displacement clock
       if (clockRef.current) {
         clockRef.current.start();
-        setStatus('PLAYING');
+        setStatus("PLAYING");
         setCountdownVal(null);
       }
     }
@@ -92,8 +98,8 @@ export default function App() {
 
     // 1. Scene & Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x06060c); // Dark space canvas
-    scene.fog = new THREE.FogExp2(0x06060c, 0.015); // Cyber atmospheric fog
+    scene.background = new THREE.Color(0x87ceeb); // Bright sky blue
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.012); // Atmospheric daylight fog
     sceneRef.current = scene;
 
     // 2. Camera setup
@@ -105,9 +111,9 @@ export default function App() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // mobile friendly throttling
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Beautiful anti-aliased shadows
-    
+
     // Clear wrapper first
-    containerRef.current.innerHTML = '';
+    containerRef.current.innerHTML = "";
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -115,12 +121,12 @@ export default function App() {
     clockRef.current = clock;
 
     // 4. Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0x18182d, 1.2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Bright daylight ambient
     scene.add(ambientLight);
 
     // Primary Spotlight (Sunburst) driving shadows from overhead front-right
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
-    dirLight.position.set(10, 20, 15);
+    const dirLight = new THREE.DirectionalLight(0xffeebb, 1.8); // Warm sunlight
+    dirLight.position.set(10, 25, 15);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
@@ -159,7 +165,7 @@ export default function App() {
     // 6. Input Manager Initializations
     const input = new InputManager();
     input.init(containerRef.current);
-    
+
     input.onSwipeLeft = () => player.laneLeft();
     input.onSwipeRight = () => player.laneRight();
     input.onSwipeUp = () => player.jump();
@@ -193,17 +199,30 @@ export default function App() {
 
       const deltaTime = Math.min(0.06, clock.getDelta()); // Cap delta to prevent huge jumps on lag spikes
 
-      const activeStatus = statsRef.current.score < 0 ? 'READY' : (player.action === 'CRASH' ? 'GAMEOVER' : (clock.running ? 'PLAYING' : 'PAUSED'));
+      const isPlaying = statusRefVal.current === "PLAYING";
+      const isCountdown = statusRefVal.current === "COUNTDOWN";
+
+      const activeStatus =
+        statsRef.current.score < 0
+          ? "READY"
+          : player.action === "CRASH"
+            ? "GAMEOVER"
+            : isPlaying
+              ? "PLAYING"
+              : "PAUSED";
 
       // Run particles every frame for seamless presentation regardless of physics activity
       if (particlesRef.current) {
         particlesRef.current.update(deltaTime);
       }
 
-      const isCountdown = statusRefVal.current === 'COUNTDOWN';
-
       // If active running gameplay OR during countdown alignment
-      if ((clock.running || isCountdown) && playerRef.current && worldRef.current && cameraFollowRef.current) {
+      if (
+        (isPlaying || isCountdown) &&
+        playerRef.current &&
+        worldRef.current &&
+        cameraFollowRef.current
+      ) {
         const activePlayer = playerRef.current;
         const activeWorld = worldRef.current;
         const activeCamera = cameraFollowRef.current;
@@ -217,20 +236,41 @@ export default function App() {
 
           // Align camera and refresh core trackers
           activeCamera.update(activePlayer.position, deltaTime);
-          activeWorld.tick(deltaTime);
+          activeWorld.tick(
+            deltaTime,
+            activePlayer.position,
+            activePlayer.isMagnetActive,
+          );
         } else {
           // A. Refresh Player Coordinates & Actions
           activePlayer.update(deltaTime);
           setCurrentSpeed(activePlayer.speed);
 
           // B. Exhaust sparks trail
-          if (activePlayer.action !== 'CRASH' && particlesRef.current) {
-            particlesRef.current.spawnExhaustTrail(activePlayer.position, activePlayer.speed);
+          if (activePlayer.action !== "CRASH" && particlesRef.current) {
+            if (activePlayer.isJetpackActive) {
+              // Produce a heavy jetpack flame-like trail under we stand (offset)
+              particlesRef.current.spawnExhaustTrail(
+                activePlayer.position
+                  .clone()
+                  .add(new THREE.Vector3(0, 0.5, -0.5)),
+                activePlayer.speed * 2,
+              );
+            } else {
+              particlesRef.current.spawnExhaustTrail(
+                activePlayer.position,
+                activePlayer.speed,
+              );
+            }
           }
 
           // C. Clean/Build track segments ahead
           activeWorld.updateSegments(activePlayer.position.z);
-          activeWorld.tick(deltaTime);
+          activeWorld.tick(
+            deltaTime,
+            activePlayer.position,
+            activePlayer.isMagnetActive,
+          );
 
           // D. Follow player position smoothly
           activeCamera.update(activePlayer.position, deltaTime);
@@ -238,76 +278,175 @@ export default function App() {
 
         // E. Ride lights along player trail for neon highlighting
         if (dirLight) {
-          dirLight.position.set(activePlayer.position.x + 10, 20, activePlayer.position.z + 15);
+          dirLight.position.set(
+            activePlayer.position.x + 10,
+            20,
+            activePlayer.position.z + 15,
+          );
           dirLight.target = activePlayer.mesh;
         }
         if (cursorLightRef.current) {
-          cursorLightRef.current.position.set(activePlayer.position.x, 3.2, activePlayer.position.z + 8);
+          cursorLightRef.current.position.set(
+            activePlayer.position.x,
+            3.2,
+            activePlayer.position.z + 8,
+          );
         }
 
-        // F. COIN COLLECTOR CHECK (Surgical AABB math)
+        // F. COIN & POWERUP COLLECTOR CHECK (Surgical AABB math)
         const playerBox = activePlayer.getBoundingBox();
 
         for (let i = 0; i < activeWorld.activeCoins.length; i++) {
           const coin = activeWorld.activeCoins[i];
           if (!coin.collected && coin.mesh) {
-            // Check approximate quick proximity before doing rich intersection logic to save overhead
-            if (Math.abs(coin.z - activePlayer.position.z) < 2.5 && coin.lane === activePlayer.currentLane) {
+            // Check approximate quick proximity before doing rich intersection logic
+            if (activePlayer.position.distanceTo(coin.mesh.position) < 3.0) {
               const coinBox = new THREE.Box3().setFromObject(coin.mesh);
               // Check collision overlap
-              if (AABBCollision.checkIntersectionWithTolerance(playerBox, coinBox, 0.15, 0.15, 0.15)) {
+              if (
+                AABBCollision.checkIntersectionWithTolerance(
+                  playerBox,
+                  coinBox,
+                  0.4,
+                  0.4,
+                  0.4,
+                )
+              ) {
                 activeWorld.collectCoin(coin);
-                
-                // Spawn golden sparkle rings
+
                 if (particlesRef.current) {
-                  particlesRef.current.spawnCoinBurst(new THREE.Vector3(-coin.lane * PlayerController.LANE_WIDTH, coin.y, coin.z));
+                  particlesRef.current.spawnCoinBurst(
+                    coin.mesh.position.clone(),
+                  );
                 }
 
-                // Increment Stats
                 statsRef.current.coins += 1;
               }
             }
           }
         }
 
-        // G. OBSTACLE COLLISION DETECTOR (AABB with margins)
+        for (let i = 0; i < activeWorld.activePowerups.length; i++) {
+          const pow = activeWorld.activePowerups[i];
+          if (!pow.collected && pow.mesh) {
+            if (activePlayer.position.distanceTo(pow.mesh.position) < 3.0) {
+              const powBox = new THREE.Box3().setFromObject(pow.mesh);
+              if (
+                AABBCollision.checkIntersectionWithTolerance(
+                  playerBox,
+                  powBox,
+                  0.4,
+                  0.4,
+                  0.4,
+                )
+              ) {
+                activeWorld.collectPowerup(pow);
+
+                if (pow.type === "JETPACK") activePlayer.activateJetpack();
+                if (pow.type === "MAGNET") activePlayer.activateMagnet();
+                if (pow.type === "SUPER_SNEAKERS")
+                  activePlayer.activateSneakers();
+              }
+            }
+          }
+        }
+
+        // Check floor height under the player for running on trains/ramps
+        let targetBaseHeight = 0.6; // Default ground level
+
         for (let j = 0; j < activeWorld.activeObstacles.length; j++) {
-          const obstacle = activeWorld.activeObstacles[j];
-          if (!obstacle.collided && obstacle.mesh) {
-            const zDistance = Math.abs(obstacle.z - activePlayer.position.z);
-            // Obstacles can be deep (e.g. static trains can span 7m along Z). Verify z distance threshold
-            const depthCheckLimit = (obstacle.type === 'TRAIN_STATIC') ? 5.0 : 2.5;
+          const obs = activeWorld.activeObstacles[j];
+          if (
+            obs.lane === activePlayer.currentLane ||
+            obs.lane === activePlayer.targetLane
+          ) {
+            const zDist = activePlayer.position.z - obs.z;
+            // Check if player is longitudinally within this obstacle
+            if (zDist > -obs.depth! / 2 && zDist < obs.depth! / 2) {
+              if (obs.type === "TRAIN_STATIC" || obs.type === "TRAIN_MOVING") {
+                targetBaseHeight = Math.max(
+                  targetBaseHeight,
+                  obs.height! + 0.6,
+                );
+              } else if (obs.type === "RAMP") {
+                const fraction = (zDist + obs.depth! / 2) / obs.depth!;
+                const currentRampHeight = fraction * obs.height!;
+                targetBaseHeight = Math.max(
+                  targetBaseHeight,
+                  currentRampHeight + 0.6,
+                );
+              }
+            }
+          }
+        }
 
-            if (zDistance < depthCheckLimit && (obstacle.lane === activePlayer.currentLane || obstacle.lane === activePlayer.targetLane)) {
-              const obstacleBox = obstacle.getBoundingBox ? obstacle.getBoundingBox() : new THREE.Box3().setFromObject(obstacle.mesh);
-              
-              // Forgiving margin triggers: allows jump and slide clearances
-              if (AABBCollision.checkIntersectionWithTolerance(playerBox, obstacleBox, 0.25, 0.1, 0.22)) {
-                obstacle.collided = true;
-                activePlayer.triggerCrash();
+        // Don't override jetpack flight height
+        if (!activePlayer.isJetpackActive) {
+          activePlayer.baseHeight = targetBaseHeight;
+        }
 
-                // Explode magenta fragments
-                if (particlesRef.current) {
-                  particlesRef.current.spawnCrashBurst(activePlayer.position);
+        // G. OBSTACLE COLLISION DETECTOR (AABB with margins)
+        if (!activePlayer.isJetpackActive) {
+          for (let j = 0; j < activeWorld.activeObstacles.length; j++) {
+            const obstacle = activeWorld.activeObstacles[j];
+            if (!obstacle.collided && obstacle.mesh) {
+              const zDistance = Math.abs(obstacle.z - activePlayer.position.z);
+              // Obstacles can be deep (e.g. static trains can span 7m along Z). Verify z distance threshold
+              const depthCheckLimit =
+                obstacle.type === "TRAIN_STATIC" ||
+                obstacle.type === "TRAIN_MOVING"
+                  ? 5.0
+                  : 2.5;
+
+              if (
+                zDistance < depthCheckLimit &&
+                (obstacle.lane === activePlayer.currentLane ||
+                  obstacle.lane === activePlayer.targetLane)
+              ) {
+                const obstacleBox = obstacle.getBoundingBox
+                  ? obstacle.getBoundingBox()
+                  : new THREE.Box3().setFromObject(obstacle.mesh);
+
+                // Forgiving margin triggers: allows jump and slide clearances
+                if (
+                  AABBCollision.checkIntersectionWithTolerance(
+                    playerBox,
+                    obstacleBox,
+                    0.25,
+                    0.1,
+                    0.22,
+                  )
+                ) {
+                  obstacle.collided = true;
+                  activePlayer.triggerCrash();
+
+                  // Explode magenta fragments
+                  if (particlesRef.current) {
+                    particlesRef.current.spawnCrashBurst(activePlayer.position);
+                  }
+
+                  // Push final stats update
+                  clock.stop();
+                  handleGameOver();
                 }
-
-                // Push final stats update
-                clock.stop();
-                handleGameOver();
               }
             }
           }
         }
 
         // H. STAT DISPLACEMENT SCORE ACCUMULATION
-        if (activePlayer.action !== 'CRASH') {
+        if (activePlayer.action !== "CRASH") {
           statsRef.current.distance = activePlayer.position.z;
-          statsRef.current.score = statsRef.current.distance + (statsRef.current.coins * 105);
+          statsRef.current.score =
+            statsRef.current.distance + statsRef.current.coins * 105;
 
           // Update High Score if needed
           if (statsRef.current.score > statsRef.current.highScore) {
             statsRef.current.highScore = statsRef.current.score;
-            localStorage.setItem('cyber_runner_highscore', Math.floor(statsRef.current.highScore).toString());
+            localStorage.setItem(
+              "cyber_runner_highscore",
+              Math.floor(statsRef.current.highScore).toString(),
+            );
           }
         }
 
@@ -362,15 +501,21 @@ export default function App() {
     statsRef.current.distance = 0;
     setStats({ ...statsRef.current });
 
-    if (playerRef.current && cameraFollowRef.current && worldRef.current && particlesRef.current && clockRef.current) {
+    if (
+      playerRef.current &&
+      cameraFollowRef.current &&
+      worldRef.current &&
+      particlesRef.current &&
+      clockRef.current
+    ) {
       playerRef.current.reset(0);
       cameraFollowRef.current.reset(playerRef.current.position);
       worldRef.current.init();
       particlesRef.current.clearAll();
-      
+
       // Stand-by clock until countdown is complete
       clockRef.current.stop();
-      setStatus('COUNTDOWN');
+      setStatus("COUNTDOWN");
       setCountdownVal(5); // Start 5 seconds countdown
     }
   };
@@ -378,14 +523,14 @@ export default function App() {
   const handlePause = () => {
     if (clockRef.current) {
       clockRef.current.stop();
-      setStatus('PAUSED');
+      setStatus("PAUSED");
     }
   };
 
   const handleResume = () => {
     if (clockRef.current) {
       clockRef.current.start();
-      setStatus('PLAYING');
+      setStatus("PLAYING");
     }
   };
 
@@ -394,40 +539,47 @@ export default function App() {
   };
 
   const handleGameOver = () => {
-    setStatus('GAMEOVER');
+    setStatus("GAMEOVER");
     // Ensure final state sync to React is complete immediately
     setStats({ ...statsRef.current });
   };
 
   // Virtual buttons forwarding actions to player Controller
   const executeLeftStr = () => {
-    if (playerRef.current && (status === 'PLAYING' || status === 'COUNTDOWN')) {
+    if (playerRef.current && (status === "PLAYING" || status === "COUNTDOWN")) {
       playerRef.current.laneLeft();
     }
   };
 
   const executeRightStr = () => {
-    if (playerRef.current && (status === 'PLAYING' || status === 'COUNTDOWN')) {
+    if (playerRef.current && (status === "PLAYING" || status === "COUNTDOWN")) {
       playerRef.current.laneRight();
     }
   };
 
   const executeJumpStr = () => {
-    if (playerRef.current && (status === 'PLAYING' || status === 'COUNTDOWN')) {
+    if (playerRef.current && (status === "PLAYING" || status === "COUNTDOWN")) {
       playerRef.current.jump();
     }
   };
 
   const executeSlideStr = () => {
-    if (playerRef.current && (status === 'PLAYING' || status === 'COUNTDOWN')) {
+    if (playerRef.current && (status === "PLAYING" || status === "COUNTDOWN")) {
       playerRef.current.slide();
     }
   };
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-slate-950 font-sans" id="canvas-main-viewport">
+    <main
+      className="relative w-screen h-screen overflow-hidden bg-slate-950 font-sans"
+      id="canvas-main-viewport"
+    >
       {/* 3D WebGL Canvas Rendering Target */}
-      <div ref={containerRef} className="w-full h-full absolute inset-0 z-0 select-none outline-none" id="world-graphics-renderer" />
+      <div
+        ref={containerRef}
+        className="w-full h-full absolute inset-0 z-0 select-none outline-none"
+        id="world-graphics-renderer"
+      />
 
       {/* Cyberpunk UI Overlay Controls and Counters */}
       <GameUI
@@ -446,24 +598,33 @@ export default function App() {
       />
 
       {/* Cyberpunk Camera Control Overlay HUD */}
-      <div className="absolute top-20 md:top-24 right-4 z-30 select-none pointer-events-none" id="camera-hud-container">
+      <div
+        className="absolute top-20 md:top-24 right-4 z-30 select-none pointer-events-none"
+        id="camera-hud-container"
+      >
         <CameraControls
           onMoveLeft={executeLeftStr}
           onMoveRight={executeRightStr}
           onLaneChange={(lane) => {
-            if (playerRef.current && (status === 'PLAYING' || status === 'COUNTDOWN')) {
+            if (
+              playerRef.current &&
+              (status === "PLAYING" || status === "COUNTDOWN")
+            ) {
               playerRef.current.setTargetLaneDirect(lane);
             }
           }}
           onHeightStateChange={(state) => {
-            if (playerRef.current && (status === 'PLAYING' || status === 'COUNTDOWN')) {
-               playerRef.current.setDuckingStatus(state === 'CROUCH');
+            if (
+              playerRef.current &&
+              (status === "PLAYING" || status === "COUNTDOWN")
+            ) {
+              playerRef.current.setDuckingStatus(state === "CROUCH");
             }
           }}
           onJump={executeJumpStr}
           onCrouch={executeSlideStr}
           onRestart={handleRestart}
-          isGamePlaying={status === 'PLAYING'}
+          isGamePlaying={status === "PLAYING"}
         />
       </div>
     </main>

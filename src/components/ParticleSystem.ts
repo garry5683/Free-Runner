@@ -22,8 +22,8 @@ export class ParticleSystem {
     // Small boxes render extremely quickly compared to spheres
     this.sparkGeometry = new THREE.BoxGeometry(0.18, 0.18, 0.18);
     this.coinMaterial = new THREE.MeshBasicMaterial({ color: 0xffea00 });
-    this.crashMaterial = new THREE.MeshBasicMaterial({ color: 0xff0055 });
-    this.jetMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+    this.crashMaterial = new THREE.MeshBasicMaterial({ color: 0xdd2222 });
+    this.jetMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.6 });
   }
 
   /**
@@ -86,14 +86,16 @@ export class ParticleSystem {
    * Emits trailing exhaust sparks behind hoverboard engines.
    */
   public spawnExhaustTrail(position: THREE.Vector3, playerSpeed: number) {
-    // Left thruster
-    const leftJet = position.clone().add(new THREE.Vector3(-0.4, -0.5, -0.9));
-    const rightJet = position.clone().add(new THREE.Vector3(0.4, -0.5, -0.9));
+    // Only spawn dust occasionally
+    if (Math.random() > 0.3) return;
 
-    const jets = [leftJet, rightJet];
+    // Dust at wheels
+    const leftWheel = position.clone().add(new THREE.Vector3(-0.35, -0.7, -0.6));
+    const rightWheel = position.clone().add(new THREE.Vector3(0.35, -0.7, -0.6));
 
-    jets.forEach((pos) => {
-      // Small sparks
+    const wheels = [leftWheel, rightWheel];
+
+    wheels.forEach((pos) => {
       const mesh = new THREE.Mesh(this.sparkGeometry, this.jetMaterial);
       mesh.position.copy(pos);
       this.scene.add(mesh);
@@ -101,12 +103,12 @@ export class ParticleSystem {
       this.activeParticles.push({
         mesh,
         velocity: {
-          x: (Math.random() - 0.5) * 0.5,
-          y: (Math.random() - 0.3) * 0.3,
-          z: -playerSpeed * 0.6 - (Math.random() * 4.0), // Shoot backwards relative to player
+          x: (Math.random() - 0.5) * 1.5,
+          y: Math.random() * 0.5,
+          z: -playerSpeed * 0.2, // Small toss backwards
         },
         life: 0,
-        maxLife: 0.15 + Math.random() * 0.15,
+        maxLife: 0.1 + Math.random() * 0.2,
       });
     });
   }

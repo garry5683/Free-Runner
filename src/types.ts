@@ -18,7 +18,19 @@ export interface PlayerStats {
   highScore: number;
 }
 
-export type ObstacleType = 'BARRIER_LOW' | 'BARRIER_HIGH' | 'TRAIN_STATIC';
+export type ObstacleType = 'BARRIER_LOW' | 'BARRIER_HIGH' | 'TRAIN_STATIC' | 'TRAIN_MOVING' | 'RAMP';
+
+export type PowerupType = 'JETPACK' | 'MAGNET' | 'SUPER_SNEAKERS';
+
+export interface Powerup {
+  id: string;
+  type: PowerupType;
+  lane: Lane;
+  z: number;
+  y: number;
+  mesh: THREE.Mesh | THREE.Group;
+  collected: boolean;
+}
 
 export interface Obstacle {
   id: string;
