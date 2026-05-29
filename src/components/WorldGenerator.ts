@@ -45,8 +45,8 @@ export class WorldGenerator {
 
     // Define reusable assets with Subway Surfers style themes (bright colors, gravel, tracks, brick)
     this.trackMaterial = new THREE.MeshStandardMaterial({
-      color: 0x8b7355, // Gravel brown
-      roughness: 0.9,
+      color: 0xc2a689, // Brighter sand/gravel
+      roughness: 0.8,
       metalness: 0.1,
     });
 
@@ -196,7 +196,7 @@ export class WorldGenerator {
     }
 
     // 3. Side Walls (Cityscape Buildings)
-    const buildingColors = [0x5566aa, 0x7788dd, 0xaaaaaa, 0x996655, 0x8899aa];
+    const buildingColors = [0xff6688, 0x44aaff, 0xffcc44, 0x55eeaa, 0xaa77ff];
 
     // Create random buildings alongside track
     const buildBuildings = (xPos: number) => {
@@ -708,13 +708,13 @@ export class WorldGenerator {
       const group = new THREE.Group();
 
       // Pick random train colors: brightly colored cars like the game
-      const colors = [0x55aa55, 0x3366cc, 0xe84a4a, 0xf0c030];
+      const colors = [0x00ff88, 0x00aaff, 0xff3366, 0xffdd00, 0xaa22ff];
       const tColor = colors[Math.floor(Math.random() * colors.length)];
 
       const trainMat = new THREE.MeshStandardMaterial({
         color: tColor,
-        metalness: 0.1,
-        roughness: 0.9,
+        metalness: 0.3,
+        roughness: 0.4,
       });
 
       // Main Body

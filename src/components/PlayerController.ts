@@ -31,6 +31,7 @@ export class PlayerController {
   public isSliding = false;
   private slideDuration = 0.7; // seconds
   private slideTimer = 0;
+  private isPersistentDucking = false;
 
   // Powerups
   public isJetpackActive = false;
@@ -71,7 +72,7 @@ export class PlayerController {
 
   // Dog meshes
   private dogGroup!: THREE.Group;
-  private dogLegs: THREE.Mesh[] = [];
+  private dogLegs: THREE.Group[] = [];
 
   // Collision box measurements
   public width = 1.2;
@@ -755,8 +756,14 @@ export class PlayerController {
     // 3. Jump Dynamics (Gravity and Flight)
     if (this.isGrounded) {
       if (this.position.y < this.baseHeight) {
-        // If baseHeight is higher (jetpack), elevate smoothly
-        this.position.y += (this.baseHeight - this.position.y) * 10 * deltaTime;
+        // Snap directly for steep inclines/ramps to prevent clipping into subsequent geometry
+        // unless jetpack is active, which might need smooth lerping (but jetpack is baseHeight=10, snapping is fine too, or we can just snap always)
+        if (this.isJetpackActive) {
+          this.position.y +=
+            (this.baseHeight - this.position.y) * 10 * deltaTime;
+        } else {
+          this.position.y = this.baseHeight;
+        }
       } else if (this.position.y > this.baseHeight + 0.1) {
         // If we are grounded but way above baseHeight, we should be falling
         this.isGrounded = false;
@@ -849,13 +856,22 @@ export class PlayerController {
       this.height = 1.8;
     }
 
+    // Flying body tilt
+    if (this.isJetpackActive) {
+      this.bodyMesh.rotation.x +=
+        (-Math.PI / 4 - this.bodyMesh.rotation.x) * 10 * deltaTime;
+    } else {
+      this.bodyMesh.rotation.x +=
+        (0 - this.bodyMesh.rotation.x) * 10 * deltaTime;
+    }
+
     // Running animation
     if (this.isJetpackActive) {
       // Flying pose
-      this.leftLegGrid.rotation.x = -0.5;
-      this.rightLegGrid.rotation.x = -0.5;
-      this.leftArmGrid.rotation.x = 0;
-      this.rightArmGrid.rotation.x = 0;
+      this.leftLegGrid.rotation.x = -0.2;
+      this.rightLegGrid.rotation.x = 0.2;
+      this.leftArmGrid.rotation.x = -Math.PI / 2; // Arms Superman pose
+      this.rightArmGrid.rotation.x = -Math.PI / 2;
     } else if (this.isGrounded && !this.isSliding && this.action !== "CRASH") {
       const runSwing = Math.sin(this.position.z * 1.8) * 0.9;
       this.leftLegGrid.rotation.x = runSwing;

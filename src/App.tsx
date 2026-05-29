@@ -98,8 +98,8 @@ export default function App() {
 
     // 1. Scene & Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb); // Bright sky blue
-    scene.fog = new THREE.FogExp2(0x87ceeb, 0.012); // Atmospheric daylight fog
+    scene.background = new THREE.Color(0x8ae6ff); // Brighter vibrant sky blue
+    scene.fog = new THREE.FogExp2(0x8ae6ff, 0.008); // Less dense atmospheric daylight fog
     sceneRef.current = scene;
 
     // 2. Camera setup
@@ -121,11 +121,15 @@ export default function App() {
     clockRef.current = clock;
 
     // 4. Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Bright daylight ambient
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Extremely bright daylight ambient
     scene.add(ambientLight);
 
+    // Add hemisphere light for rich ambient colors
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x4488aa, 0.8);
+    scene.add(hemisphereLight);
+
     // Primary Spotlight (Sunburst) driving shadows from overhead front-right
-    const dirLight = new THREE.DirectionalLight(0xffeebb, 1.8); // Warm sunlight
+    const dirLight = new THREE.DirectionalLight(0xfffff0, 2.8); // Intense bright sunlight
     dirLight.position.set(10, 25, 15);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
@@ -140,8 +144,8 @@ export default function App() {
     dirLight.shadow.bias = -0.0005;
     scene.add(dirLight);
 
-    // Cyan Neon floor wash light that rides slightly ahead of player (creates gorgeous oncoming hazard shines)
-    const cursorLight = new THREE.PointLight(0x00ffff, 3.5, 25.0, 1.5);
+    // Warm Neon floor wash light that rides slightly ahead of player (creates gorgeous oncoming hazard shines)
+    const cursorLight = new THREE.PointLight(0xffaa44, 4.0, 35.0, 1.2); // Golden neon boost
     cursorLight.position.set(0, 4, 10);
     scene.add(cursorLight);
     cursorLightRef.current = cursorLight;
@@ -307,18 +311,18 @@ export default function App() {
                 AABBCollision.checkIntersectionWithTolerance(
                   playerBox,
                   coinBox,
-                  0.4,
-                  0.4,
-                  0.4,
+                  -0.4,
+                  -0.4,
+                  -0.4,
                 )
               ) {
-                activeWorld.collectCoin(coin);
-
                 if (particlesRef.current) {
                   particlesRef.current.spawnCoinBurst(
                     coin.mesh.position.clone(),
                   );
                 }
+
+                activeWorld.collectCoin(coin);
 
                 statsRef.current.coins += 1;
               }
@@ -335,9 +339,9 @@ export default function App() {
                 AABBCollision.checkIntersectionWithTolerance(
                   playerBox,
                   powBox,
-                  0.4,
-                  0.4,
-                  0.4,
+                  -0.4,
+                  -0.4,
+                  -0.4,
                 )
               ) {
                 activeWorld.collectPowerup(pow);
